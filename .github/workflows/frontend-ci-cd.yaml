@@ -1,0 +1,62 @@
+# Nome do workflow que aparecerá na aba "Actions" do GitHub
+name: Frontend CI/CD
+
+# Define quando o workflow será executado
+on:
+  # Executa em qualquer commit enviado para qualquer branch
+  push:
+    branches:
+      - "**"
+
+  # Também executa quando houver pull request para qualquer branch
+  pull_request:
+    branches:
+      - "**"
+
+# Variáveis de ambiente usadas pelo workflow
+env:
+  NODE_VERSION: 22
+
+jobs:
+  frontend:
+    # Nome amigável do job
+    name: Testar e buildar frontend
+
+    # Sistema operacional usado pelo GitHub Actions
+    runs-on: ubuntu-latest
+
+    steps:
+      # Baixa o código do repositório para dentro da máquina do GitHub Actions
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      # Instala e configura a versão do Node.js no GitHub Actions
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+          # Ativa cache das dependências npm para acelerar execuções futuras
+          cache: npm
+
+          # Como o frontend está na pasta ./frontend,
+          # informamos onde está o package-lock.json
+          cache-dependency-path: ./frontend/package-lock.json
+
+      # Instala as dependências do frontend
+      # npm ci é recomendado em CI porque usa exatamente o package-lock.json
+      - name: Instalar dependências
+        working-directory: ./frontend
+        run: npm ci
+
+      # Executa os testes automatizados
+      # No package.json, isso chama: vitest run
+      - name: Rodar testes
+        working-directory: ./frontend
+        run: npm test
+
+      # Executa o build (checagem de tipos com tsc + empacotamento com Vite)
+      # Este passo verifica se o projeto compila corretamente
+      - name: Rodar build
+        working-directory: ./frontend
+        run: npm run build

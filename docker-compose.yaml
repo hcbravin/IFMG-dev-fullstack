@@ -32,5 +32,31 @@ services:
     volumes:
       - ollama_data:/root/.ollama
 
+  # Serviço do frontend (desenvolvimento)
+  frontend-dev:
+    container_name: frontend-dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules                     # Evita apagar node_modules do container
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"   # variável a partir de ./.env (host:container)
+    environment:
+      - FRONTEND_PORT=${FRONTEND_PORT}        # porta usada pelo Vite dentro do container
+    env_file:
+      - ./frontend/.env.development           # injeta VITE_API_URL no ambiente
+
+  frontend-test:
+    container_name: frontend-test
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: test
+    env_file:
+      - ./frontend/.env.development           # injeta variaveis dentro do ambiente
+
 volumes:
   ollama_data: 
