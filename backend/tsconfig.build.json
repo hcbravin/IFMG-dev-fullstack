@@ -3,11 +3,9 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "compilerOptions": {
-      "types": [
-        "node"
-      ] // remove vitest/globals do build
-    },
+    "types": [
+      "node"
+    ] // remove vitest/globals do build
   },
   "include": [
     "src"
