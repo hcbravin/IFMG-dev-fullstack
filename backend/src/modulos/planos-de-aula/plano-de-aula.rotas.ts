@@ -24,4 +24,17 @@ planoDeAulaRotas.post(
     planoDeAulaControlador.gerarPlanoFinal
 );
 
+// GET /
+planoDeAulaRotas.get(
+    '/', 
+    planoDeAulaControlador.listarPlanos.bind(planoDeAulaControlador)
+);
+
+// GET /:id
+planoDeAulaRotas.get(
+    '/:id', 
+    planoDeAulaControlador.buscarPlano.bind(planoDeAulaControlador)
+);
+
+
 export { planoDeAulaRotas };

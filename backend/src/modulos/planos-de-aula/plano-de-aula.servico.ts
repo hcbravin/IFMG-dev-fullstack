@@ -59,9 +59,6 @@ class PlanoDeAulaServico {
 
     /**
      * Cria uma nova instância do serviço de plano de aula.
-     *
-     * A instância de IaServico lê AI_API_KEY, AI_MODEL e AI_API_URL
-     * diretamente de process.env.
      */
     constructor() {
         this.iaServico = new IaServico();
@@ -70,12 +67,6 @@ class PlanoDeAulaServico {
     /**
      * Gera o primeiro rascunho estruturado de plano de aula a partir
      * da descrição livre informada pelo professor.
-     *
-     * @param descricao Descrição em linguagem natural enviada pelo professor.
-     * @returns Rascunho estruturado de uma única aula.
-     *
-     * @throws Error Caso a descrição esteja vazia.
-     * @throws Error Caso a IA retorne JSON inválido ou incompleto.
      */
     async gerarRascunho(descricao: string): Promise<PlanoDeAulaRascunho> {
         if (!descricao || descricao.trim().length === 0) {
@@ -88,22 +79,12 @@ class PlanoDeAulaServico {
             prompt,
         );
 
-        // this.validarRascunho(rascunho);
-
         return rascunho;
     }
 
     /**
      * Melhora um rascunho existente de plano de aula com base nas
      * novas instruções enviadas pelo professor.
-     *
-     * @param rascunhoAtual Rascunho atual do plano de aula.
-     * @param instrucoes Instruções adicionais para melhoria do rascunho.
-     * @returns Rascunho melhorado de uma única aula.
-     *
-     * @throws Error Caso o rascunho atual esteja incompleto.
-     * @throws Error Caso as instruções estejam vazias.
-     * @throws Error Caso a IA retorne JSON inválido ou incompleto.
      */
     async melhorarRascunho(
         rascunhoAtual: PlanoDeAulaRascunho,
@@ -126,24 +107,12 @@ class PlanoDeAulaServico {
     }
 
     /**
-     * Gera a versão final do plano de aula em formato de relatório.
-     *
-     * O prompt atual solicita que a IA retorne um JSON contendo:
-     * - titulo;
-     * - plano;
-     * - relatorio.
-     *
-     * Por isso, este método usa gerarJson<PlanoDeAulaFinal>(),
-     * e não gerarTexto().
-     *
-     * @param rascunhoRevisado Rascunho revisado pelo professor.
-     * @returns Plano de aula final com dados estruturados e relatório textual.
-     *
-     * @throws Error Caso o rascunho esteja incompleto.
-     * @throws Error Caso a IA retorne JSON inválido ou incompleto.
+     * Gera a versão final do plano de aula em formato de relatório
+     * e persiste no MongoDB.
      */
     async gerarPlanoFinal(
         rascunhoRevisado: PlanoDeAulaRascunho,
+        sessaoId: string,
     ): Promise<PlanoDeAulaFinal> {
         this.validarRascunho(rascunhoRevisado);
 
@@ -155,7 +124,11 @@ class PlanoDeAulaServico {
 
         this.validarPlanoFinal(planoFinal);
 
+        // --- Persistência no MongoDB ---
         try {
+            console.log('Tentando salvar plano no MongoDB...');
+            console.log('Sessão ID:', sessaoId);
+            
             const dadosParaSalvar = {
                 titulo: planoFinal.titulo,
                 plano: JSON.stringify(planoFinal.plano),
@@ -163,8 +136,7 @@ class PlanoDeAulaServico {
             };
 
             const repositorio = new PlanoDeAulaRepositorio();
-            
-            await repositorio.salvar(dadosParaSalvar);
+            await repositorio.salvar(dadosParaSalvar, sessaoId);
             
             console.log('Plano final salvo com sucesso no MongoDB');
         } catch (erro) {
@@ -175,12 +147,34 @@ class PlanoDeAulaServico {
     }
 
     /**
+     * Lista todos os planos de aula de uma sessão
+     */
+    async listarPlanos(sessaoId: string): Promise<any[]> {
+        try {
+            const repositorio = new PlanoDeAulaRepositorio();
+            return await repositorio.listarTodos(sessaoId);
+        } catch (erro) {
+            console.error('Erro ao listar planos:', erro);
+            return [];
+        }
+    }
+
+    /**
+     * Busca um plano específico pelo ID
+     */
+    async buscarPlanoPorId(id: string, sessaoId: string): Promise<any> {
+        try {
+            const repositorio = new PlanoDeAulaRepositorio();
+            return await repositorio.buscarPorId(id, sessaoId);
+        } catch (erro) {
+            console.error('Erro ao buscar plano:', erro);
+            return null;
+        }
+    }
+
+    /**
      * Valida se um objeto possui a estrutura mínima esperada
      * para um rascunho de plano de aula.
-     *
-     * @param rascunho Objeto a ser validado.
-     *
-     * @throws Error Caso o rascunho esteja ausente, incompleto ou inválido.
      */
     private validarRascunho(rascunho: PlanoDeAulaRascunho): void {
         if (!rascunho || typeof rascunho !== 'object') {
@@ -212,10 +206,6 @@ class PlanoDeAulaServico {
     /**
      * Valida se o plano final retornado pela IA respeita
      * a estrutura solicitada pelo prompt.
-     *
-     * @param planoFinal Objeto retornado pela IA.
-     *
-     * @throws Error Caso o plano final esteja ausente, incompleto ou inválido.
      */
     private validarPlanoFinal(planoFinal: PlanoDeAulaFinal): void {
         if (!planoFinal || typeof planoFinal !== 'object') {
@@ -227,28 +217,12 @@ class PlanoDeAulaServico {
         this.validarTexto(planoFinal.relatorio, 'relatorio');
     }
 
-    /**
-     * Valida se um valor é uma string não vazia.
-     *
-     * @param valor Valor a ser validado.
-     * @param nomeCampo Nome do campo usado na mensagem de erro.
-     *
-     * @throws Error Caso o valor não seja uma string válida.
-     */
     private validarTexto(valor: unknown, nomeCampo: string): void {
         if (typeof valor !== 'string' || valor.trim().length === 0) {
             throw new Error(`O campo "${nomeCampo}" deve ser um texto não vazio.`);
         }
     }
 
-    /**
-     * Valida se um valor é uma lista não vazia de strings não vazias.
-     *
-     * @param valor Valor a ser validado.
-     * @param nomeCampo Nome do campo usado na mensagem de erro.
-     *
-     * @throws Error Caso o valor não seja uma lista válida de textos.
-     */
     private validarListaDeTextos(valor: unknown, nomeCampo: string): void {
         if (!Array.isArray(valor) || valor.length === 0) {
             throw new Error(`O campo "${nomeCampo}" deve ser uma lista não vazia.`);
@@ -264,7 +238,6 @@ class PlanoDeAulaServico {
             );
         }
     }
-
 }
 
 export { PlanoDeAulaServico };

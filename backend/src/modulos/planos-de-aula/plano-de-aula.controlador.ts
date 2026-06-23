@@ -176,47 +176,54 @@ class PlanoDeAulaControlador {
    * @param res Objeto da resposta HTTP do Express.
    * @returns Resposta HTTP contendo o plano final ou uma mensagem de erro.
    */
-  gerarPlanoFinal = async (
-    req: Request,
-    res: Response,
-  ): Promise<Response> => {
+  /**
+ * Gera a versão final do plano de aula
+ * 
+ * POST /planos-de-aula/final
+ * 
+ * Body: { rascunhoRevisado: PlanoDeAulaRascunho, sessaoId: string }
+ */
+  async gerarPlanoFinal(req: Request, res: Response): Promise<void> {
     try {
-      /**
-       * Validação de entrada com Zod (sem middleware): o esquema garante que o
-       * rascunho foi enviado e respeita a estrutura esperada.
-       */
-      const validacao = validarComEsquema(esquemaGerarPlanoFinal, req.body);
+      const { rascunhoRevisado, sessaoId } = req.body;
 
-      if (!validacao.sucesso) {
-        return res.status(400).json({
+      if (!rascunhoRevisado) {
+        res.status(400).json({
           sucesso: false,
-          mensagem: validacao.mensagem,
-          dados: null,
+          mensagem: 'Rascunho revisado é obrigatório',
+          dados: null
         });
+        return;
       }
 
-      const rascunho: PlanoDeAulaRascunho = validacao.dados.rascunho;
+      if (!sessaoId) {
+        res.status(400).json({
+          sucesso: false,
+          mensagem: 'Identificador de sessão é obrigatório',
+          dados: null
+        });
+        return;
+      }
 
-      /**
-       * Chama a camada de serviço para gerar a versão final.
-       *
-       * Conforme o prompt atual, o retorno esperado é um JSON com:
-       * - titulo;
-       * - plano;
-       * - relatorio.
-       */
-      const planoFinal: PlanoDeAulaFinal =
-        await this.planoDeAulaServico.gerarPlanoFinal(rascunho);
+      const planoFinal = await this.servico.gerarPlanoFinal(
+        rascunhoRevisado,
+        sessaoId
+      );
 
-      return res.status(200).json({
+      res.status(200).json({
         sucesso: true,
-        mensagem: 'Plano de aula final gerado com sucesso.',
-        dados: planoFinal,
+        mensagem: 'Plano final gerado com sucesso',
+        dados: planoFinal
       });
     } catch (erro) {
-      return this.tratarErro(res, erro);
+      console.error('Erro ao gerar plano final:', erro);
+      res.status(500).json({
+        sucesso: false,
+        mensagem: erro instanceof Error ? erro.message : 'Erro ao gerar plano final',
+        dados: null
+      });
     }
-  };
+  }
 
   /**
    * Trata erros lançados pela camada de serviço e converte em uma resposta
@@ -251,6 +258,101 @@ class PlanoDeAulaControlador {
       dados: null,
     });
   }
+
+  /**
+ * Lista todos os planos de uma sessão
+ * 
+ * GET /planos-de-aula
+ * 
+ * Query: ?sessaoId=...
+ */
+  async listarPlanos(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessaoId } = req.query;
+
+      if (!sessaoId || typeof sessaoId !== 'string') {
+        res.status(400).json({
+          sucesso: false,
+          mensagem: 'Identificador de sessão é obrigatório',
+          dados: null
+        });
+        return;
+      }
+
+      const planos = await this.servico.listarPlanos(sessaoId);
+
+      res.status(200).json({
+        sucesso: true,
+        mensagem: 'Planos recuperados com sucesso',
+        dados: planos
+      });
+    } catch (erro) {
+      console.error('Erro ao listar planos:', erro);
+      res.status(500).json({
+        sucesso: false,
+        mensagem: 'Erro ao recuperar planos salvos',
+        dados: null
+      });
+    }
+  }
+
+  /**
+   * Busca um plano específico pelo ID
+   * 
+   * GET /planos-de-aula/:id
+   * 
+   * Query: ?sessaoId=...
+   */
+  async buscarPlano(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { sessaoId } = req.query;
+
+      if (!id) {
+        res.status(400).json({
+          sucesso: false,
+          mensagem: 'ID do plano é obrigatório',
+          dados: null
+        });
+        return;
+      }
+
+      if (!sessaoId || typeof sessaoId !== 'string') {
+        res.status(400).json({
+          sucesso: false,
+          mensagem: 'Identificador de sessão é obrigatório',
+          dados: null
+        });
+        return;
+      }
+
+      const plano = await this.servico.buscarPlanoPorId(id, sessaoId);
+
+      if (!plano) {
+        res.status(404).json({
+          sucesso: false,
+          mensagem: 'Plano não encontrado',
+          dados: null
+        });
+        return;
+      }
+
+      res.status(200).json({
+        sucesso: true,
+        mensagem: 'Plano recuperado com sucesso',
+        dados: plano
+      });
+    } catch (erro) {
+      console.error('Erro ao buscar plano:', erro);
+      res.status(500).json({
+        sucesso: false,
+        mensagem: 'Erro ao recuperar plano',
+        dados: null
+      });
+    }
+  }
 }
+
+
 
 export { PlanoDeAulaControlador };
