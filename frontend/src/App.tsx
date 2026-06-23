@@ -8,7 +8,7 @@
 // O App não conhece detalhes de HTTP: ele apenas chama o serviço
 // (plano-de-aula.servico) e controla qual tela mostrar conforme o estado.
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Instância pronta do cliente HTTP (camada de serviço).
 import { planoDeAulaServico } from './modulos/planos-de-aula/plano-de-aula.servico';
@@ -17,6 +17,7 @@ import { planoDeAulaServico } from './modulos/planos-de-aula/plano-de-aula.servi
 import type {
   PlanoDeAulaRascunho,
   PlanoDeAulaFinal,
+  PlanoSalvo,
 } from './modulos/planos-de-aula/plano-de-aula.tipos';
 
 // Componentes de cada etapa.
@@ -33,29 +34,47 @@ type Etapa = 'entrada' | 'formulario' | 'relatorio';
  * Componente raiz da aplicação MeuPlano.AI.
  */
 function App() {
-  // Etapa atual do fluxo.
+  // --- ESTADOS EXISTENTES ---
   const [etapa, setEtapa] = useState<Etapa>('entrada');
-
-  // Rascunho gerado pela IA (disponível a partir da etapa "formulario").
   const [rascunho, setRascunho] = useState<PlanoDeAulaRascunho | null>(null);
-
-  // Versão do rascunho: muda a cada melhoria para forçar o formulário a
-  // recarregar os campos com o novo conteúdo (via prop "key").
   const [versaoRascunho, setVersaoRascunho] = useState(0);
-
-  // Plano final (disponível na etapa "relatorio").
   const [planoFinal, setPlanoFinal] = useState<PlanoDeAulaFinal | null>(null);
-
-  // Indica requisição em andamento (para desabilitar botões / mostrar "Gerando...").
   const [carregando, setCarregando] = useState(false);
-
-  // Mensagem de erro vinda da API (ou null).
   const [erro, setErro] = useState<string | null>(null);
+
+  // --- NOVOS ESTADOS ---
+  const [sessaoId, setSessaoId] = useState<string>('');
+  const [descricao, setDescricao] = useState<string>('');
+  const [planosSalvos, setPlanosSalvos] = useState<PlanoSalvo[]>([]);
+  const [mostrarLista, setMostrarLista] = useState(false);
+  const [carregandoLista, setCarregandoLista] = useState(false);
+
+  // --- REFERÊNCIA PARA FOCAR CAMPO ---
+  const descricaoRef = useRef<HTMLTextAreaElement>(null);
+
+  // --- EFECT: INICIALIZAR SESSÃO ---
+  useEffect(() => {
+    let id = localStorage.getItem('sessaoId');
+    if (!id) {
+      id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
+      localStorage.setItem('sessaoId', id);
+    }
+    setSessaoId(id);
+  }, []);
+
+  // --- FUNÇÕES EXISTENTES (MODIFICADAS) ---
 
   /**
    * Gera o rascunho a partir da descrição e avança para a etapa de revisão.
+   * (Adicionada validação de mínimo de caracteres)
    */
   async function aoGerarRascunho(descricao: string) {
+    // Validação no cliente: mínimo 10 caracteres
+    if (!descricao || descricao.trim().length < 10) {
+      setErro('A descrição deve ter pelo menos 10 caracteres.');
+      return;
+    }
+
     setCarregando(true);
     setErro(null);
 
@@ -87,7 +106,6 @@ function App() {
         orientacoes,
       );
       setRascunho(melhorado);
-      // Incrementa a versão para o formulário recarregar com o novo rascunho.
       setVersaoRascunho((versao) => versao + 1);
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Erro inesperado.');
@@ -98,6 +116,7 @@ function App() {
 
   /**
    * Gera a versão final a partir do rascunho revisado e mostra o relatório.
+   * (MODIFICADO: passa sessaoId para o serviço)
    */
   async function aoGerarFinal(rascunhoRevisado: PlanoDeAulaRascunho) {
     setCarregando(true);
@@ -106,6 +125,7 @@ function App() {
     try {
       const resultado = await planoDeAulaServico.gerarPlanoFinal(
         rascunhoRevisado,
+        sessaoId,
       );
       setPlanoFinal(resultado);
       setEtapa('relatorio');
@@ -118,17 +138,80 @@ function App() {
 
   /**
    * Reinicia o fluxo, voltando à tela inicial.
+   * (MODIFICADO: limpa descrição e foca no campo)
    */
   function aoReiniciar() {
     setEtapa('entrada');
     setRascunho(null);
     setPlanoFinal(null);
     setErro(null);
+    setDescricao('');
+    setTimeout(() => descricaoRef.current?.focus(), 100);
   }
+
+  // --- NOVAS FUNÇÕES ---
+
+  /**
+   * Lista planos salvos da sessão atual.
+   */
+  async function aoListarPlanosSalvos() {
+    if (!sessaoId) return;
+
+    setCarregandoLista(true);
+    setErro(null);
+
+    try {
+      const planos = await planoDeAulaServico.listarPlanosSalvos(sessaoId);
+      setPlanosSalvos(planos);
+      setMostrarLista(!mostrarLista);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro ao carregar planos salvos');
+    } finally {
+      setCarregandoLista(false);
+    }
+  }
+
+  /**
+   * Carrega um plano salvo pelo ID, reconstruindo o estado da aplicação.
+   */
+  async function aoCarregarPlanoSalvo(id: string) {
+    if (!sessaoId) return;
+
+    setCarregando(true);
+    setErro(null);
+
+    try {
+      const plano = await planoDeAulaServico.buscarPlanoPorId(id, sessaoId);
+
+      if (!plano) {
+        setErro('Plano não encontrado');
+        return;
+      }
+
+      // Reconstrói o rascunho a partir do JSON
+      const rascunhoReconstruido = JSON.parse(plano.plano) as PlanoDeAulaRascunho;
+
+      setRascunho(rascunhoReconstruido);
+      setPlanoFinal({
+        titulo: plano.titulo,
+        plano: rascunhoReconstruido,
+        relatorio: plano.relatorio,
+      });
+      setEtapa('relatorio');
+      setMostrarLista(false);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro ao carregar plano');
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  // --- RENDERIZAÇÃO ---
 
   return (
     <main className="app">
-      <h1>MeuPlano.AI</h1>
+      <h1>📝 MeuPlano.AI</h1>
+      <p className="subtitulo">Crie planos de aula com inteligência artificial</p>
 
       {/* Etapa 1: entrada em linguagem natural */}
       {etapa === 'entrada' && (
@@ -136,6 +219,14 @@ function App() {
           onGerar={aoGerarRascunho}
           carregando={carregando}
           erro={erro}
+          descricao={descricao}
+          onDescricaoChange={setDescricao}
+          descricaoRef={descricaoRef}
+          planosSalvos={planosSalvos}
+          mostrarLista={mostrarLista}
+          carregandoLista={carregandoLista}
+          onListarPlanos={aoListarPlanosSalvos}
+          onCarregarPlano={aoCarregarPlanoSalvo}
         />
       )}
 

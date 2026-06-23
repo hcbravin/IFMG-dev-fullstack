@@ -168,3 +168,295 @@ body {
   border-radius: var(--raio);
   padding: 1rem;
 }
+
+
+/* NOVOS ESTILOS PARA AS MELHORIAS DE UX  */
+
+/* --- Subtítulo --- */
+.subtitulo {
+  text-align: center;
+  color: var(--cor-texto-suave);
+  margin-top: -0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+/* --- Cabeçalho do campo com contador --- */
+.campo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.contador-caracteres {
+  font-size: 0.8rem;
+  color: var(--cor-texto-suave);
+}
+
+/* --- Botão principal (destaque) --- */
+.btn-principal {
+  background-color: var(--cor-primaria);
+  color: #fff;
+  font-weight: 600;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: var(--raio);
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  width: 100%;
+}
+
+.btn-principal:hover:not(:disabled) {
+  background-color: var(--cor-primaria-escura);
+}
+
+.btn-principal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- Botão secundário --- */
+.btn-secundario {
+  background-color: #f3f4f6;
+  color: var(--cor-texto);
+  font-weight: 500;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.btn-secundario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Botão copiar --- */
+.btn-copiar {
+  background-color: #10b981;
+  color: #fff;
+  font-weight: 500;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: var(--raio);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-copiar:hover {
+  background-color: #059669;
+}
+
+/* --- Botão novo plano --- */
+.btn-novo {
+  background-color: #f3f4f6;
+  color: var(--cor-texto);
+  font-weight: 500;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-novo:hover {
+  background-color: #e5e7eb;
+}
+
+/* --- Badge de concluído --- */
+.badge-concluido {
+  background-color: #10b981;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.7rem;
+  border-radius: 2rem;
+  display: inline-block;
+}
+
+.relatorio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* --- Spinner --- */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.spinner-pequeno {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  border-top-color: var(--cor-primaria);
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Mensagem de erro --- */
+.erro-mensagem {
+  margin-top: 0.5rem;
+  padding: 0.6rem 1rem;
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--raio);
+}
+
+/* --- Seção de planos salvos --- */
+.planos-salvos-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--cor-borda);
+}
+
+/* --- Lista de planos salvos --- */
+.lista-planos {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: var(--raio);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.lista-planos h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--cor-texto-suave);
+}
+
+.lista-vazia {
+  color: var(--cor-texto-suave);
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.lista-planos ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lista-planos li {
+  margin-bottom: 0.4rem;
+}
+
+.item-plano {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  font-size: 0.9rem;
+}
+
+.item-plano:hover:not(:disabled) {
+  background-color: #eff6ff;
+  border-color: var(--cor-primaria);
+}
+
+.item-plano:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.item-titulo {
+  font-weight: 500;
+  color: var(--cor-texto);
+}
+
+.item-data {
+  font-size: 0.75rem;
+  color: var(--cor-texto-suave);
+}
+
+/* --- Relatório --- */
+.relatorio-texto {
+  background-color: #f9fafb;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.relatorio-texto p {
+  margin: 0 0 0.5rem 0;
+}
+
+.relatorio-texto p:last-child {
+  margin-bottom: 0;
+}
+
+.relatorio-acoes {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* --- Responsividade (Melhoria 5) --- */
+@media (max-width: 640px) {
+  .app {
+    padding: 1rem 0.75rem;
+  }
+
+  .app h1 {
+    font-size: 1.5rem;
+  }
+
+  .app form,
+  .app section {
+    padding: 1rem;
+  }
+
+  .relatorio-acoes {
+    flex-direction: column;
+  }
+
+  .relatorio-acoes button {
+    width: 100%;
+  }
+
+  .item-plano {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .campo-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+}
