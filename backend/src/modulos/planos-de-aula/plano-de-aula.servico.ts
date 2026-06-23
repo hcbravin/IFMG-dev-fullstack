@@ -8,6 +8,8 @@ import {
 
 import { PlanoDeAulaRascunho } from "./plano-de-aula.tipos";
 
+import { PlanoDeAulaRepositorio } from './plano-de-aula.repositorio';
+
 /**
  * Representa a resposta esperada da IA ao gerar a versão final
  * do plano de aula.
@@ -152,6 +154,22 @@ class PlanoDeAulaServico {
         );
 
         this.validarPlanoFinal(planoFinal);
+
+        try {
+            const dadosParaSalvar = {
+                titulo: planoFinal.titulo,
+                plano: JSON.stringify(planoFinal.plano),
+                relatorio: planoFinal.relatorio
+            };
+
+            const repositorio = new PlanoDeAulaRepositorio();
+            
+            await repositorio.salvar(dadosParaSalvar);
+            
+            console.log('Plano final salvo com sucesso no MongoDB');
+        } catch (erro) {
+            console.error('Erro ao salvar plano no MongoDB (nao critico):', erro);
+        }
 
         return planoFinal;
     }
